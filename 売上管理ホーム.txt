@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>f.o.o 売上管理</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap');
+
+/* ── Theme Variables ── */
+:root {
+–bg: #18181f;
+–bg-sub: #1e1e28;
+–bg-card: #23232e;
+–bg-card-hover: #2a2a36;
+–text: #f5f5f5;
+–text-sub: #8e8e9a;
+–text-dim: #5c5c6a;
+–accent: #f0a500;
+–accent-dim: rgba(240, 165, 0, 0.12);
+–accent-mid: rgba(240, 165, 0, 0.25);
+–border: #2a2a35;
+–border-focus: #f0a500;
+–danger: #ef4444;
+–danger-dim: rgba(239, 68, 68, 0.12);
+–success: #22c55e;
+–success-dim: rgba(34, 197, 94, 0.12);
+–info: #3b82f6;
+–info-dim: rgba(59, 130, 246, 0.12);
+–purple: #a855f7;
+–purple-dim: rgba(168, 85, 247, 0.12);
+–pink: #ec4899;
+–pink-dim: rgba(236, 72, 153, 0.12);
+–shadow: 0 2px 12px rgba(0,0,0,0.3);
+–shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+[data-theme=“light”] {
+–bg: #fdf6ee;
+–bg-sub: #f7efe3;
+–bg-card: #ffffff;
+–bg-card-hover: #fff8f0;
+–text: #1a1a1a;
+–text-sub: #666666;
+–text-dim: #999999;
+–accent: #e07000;
+–accent-dim: rgba(224, 112, 0, 0.08);
+–accent-mid: rgba(224, 112, 0, 0.18);
+–border: #e8ddd0;
+–border-focus: #e07000;
+–danger: #dc2626;
+–danger-dim: rgba(220, 38, 38, 0.08);
+–success: #16a34a;
+–success-dim: rgba(22, 163, 74, 0.08);
+–info: #2563eb;
+–info-dim: rgba(37, 99, 235, 0.08);
+–purple: #9333ea;
+–purple-dim: rgba(147, 51, 234, 0.08);
+–pink: #db2777;
+–pink-dim: rgba(219, 39, 119, 0.08);
+–shadow: 0 2px 12px rgba(0,0,0,0.06);
+–shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+- { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+font-family: ‘Noto Sans JP’, -apple-system, sans-serif;
+background: var(–bg);
+color: var(–text);
+min-height: 100dvh;
+min-height: 100vh;
+transition: background 0.3s, color 0.3s;
+overflow-x: hidden;
+}
+
+.container {
+max-width: 520px;
+margin: 0 auto;
+padding-bottom: 90px;
+}
+
+/* ── Loading / Flash Prevention ── */
+.app-loading {
+position: fixed; inset: 0; z-index: 9999;
+background: var(–bg);
+display: flex; align-items: center; justify-content: center;
+transition: opacity 0.3s;
+}
+.app-loading.hide { opacity: 0; pointer-events: none; }
+.app-loading .spinner {
+width: 36px; height: 36px;
+border: 3px solid var(–border);
+border-top-color: var(–accent);
+border-radius: 50%;
+animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── PIN Auth Screen ── */
+.auth-screen {
+position: fixed; inset: 0; z-index: 8000;
+background: var(–bg);
+display: flex; align-items: center; justify-content: center;
+padding: 24px;
+}
+.auth-screen.hide { display: none; }
+
+.auth-box {
+width: 100%; max-width: 340px;
+text-align: center;
+}
+.auth-logo {
+width: 56px; height: 56px;
+background: var(–accent);
+border-radius: 14px;
+display: inline-flex; align-items: center; justify-content: center;
+font-weight: 900; font-size: 16px; color: #18181f;
+margin-bottom: 16px;
+}
+.auth-title {
+font-size: 18px; font-weight: 700;
+margin-bottom: 6px;
+}
+.auth-subtitle {
+font-size: 13px; color: var(–text-sub);
+margin-bottom: 28px;
+}
+.auth-select {
+width: 100%; padding: 14px 16px;
+background: var(–bg-card); color: var(–text);
+border: 1px solid var(–border); border-radius: 10px;
+font-family: inherit; font-size: 15px;
+margin-bottom: 12px;
+appearance: none;
+background-image: url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘12’ height=‘12’ fill=’%238e8e9a’%3E%3Cpath d=‘M6 8L1 3h10z’/%3E%3C/svg%3E”);
+background-repeat: no-repeat;
+background-position: right 14px center;
+cursor: pointer;
+}
+.auth-pin-wrap {
+display: flex; gap: 8px; justify-content: center;
+margin-bottom: 16px;
+}
+.auth-pin-wrap input {
+width: 52px; height: 56px;
+background: var(–bg-card); color: var(–text);
+border: 1px solid var(–border); border-radius: 10px;
+font-family: inherit; font-size: 22px; font-weight: 700;
+text-align: center;
+outline: none;
+transition: border-color 0.2s;
+}
+.auth-pin-wrap input:focus { border-color: var(–accent); }
+.auth-btn {
+width: 100%; padding: 14px;
+background: var(–accent); color: #18181f;
+border: none; border-radius: 10px;
+font-family: inherit; font-size: 15px; font-weight: 700;
+cursor: pointer;
+transition: opacity 0.2s;
+}
+.auth-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.auth-btn:not(:disabled):active { opacity: 0.8; }
+.auth-error {
+color: var(–danger); font-size: 13px;
+margin-top: 10px; min-height: 20px;
+}
+
+/* ── Header ── */
+.header {
+padding: 14px 20px 10px;
+display: flex; align-items: center; justify-content: space-between;
+position: sticky; top: 0; z-index: 100;
+background: var(–bg);
+border-bottom: 1px solid var(–border);
+}
+.header-left { display: flex; align-items: center; gap: 10px; }
+.logo {
+width: 34px; height: 34px;
+background: var(–accent); border-radius: 8px;
+display: flex; align-items: center; justify-content: center;
+font-weight: 900; font-size: 10px; color: #18181f;
+letter-spacing: -0.5px; flex-shrink: 0;
+}
+.header-title { font-size: 14px; font-weight: 700; }
+.header-title span { color: var(–accent); }
+
+.header-right { display: flex; align-items: center; gap: 8px; }
+.header-btn {
+background: var(–bg-card); border: 1px solid var(–border);
+border-radius: 8px; padding: 6px 10px;
+cursor: pointer; font-size: 15px;
+transition: all 0.2s; color: var(–text);
+display: flex; align-items: center; justify-content: center;
+}
+.header-btn:active { transform: scale(0.92); }
+
+/* ── User Bar ── */
+.user-bar {
+padding: 10px 20px;
+display: flex; justify-content: space-between; align-items: center;
+font-size: 12px; color: var(–text-sub);
+}
+.user-bar .name { color: var(–accent); font-weight: 700; }
+
+/* ── Stats Row ── */
+.stats-row {
+display: grid; grid-template-columns: 1fr 1fr 1fr;
+gap: 8px; padding: 4px 16px 14px;
+}
+.stat-card {
+background: var(–bg-card); border: 1px solid var(–border);
+border-radius: 12px; padding: 12px 8px; text-align: center;
+transition: border-color 0.2s;
+}
+.stat-label { font-size: 10px; color: var(–text-sub); margin-bottom: 3px; letter-spacing: 0.3px; }
+.stat-value { font-size: 20px; font-weight: 900; color: var(–accent); line-height: 1.2; }
+.stat-unit { font-size: 10px; color: var(–text-dim); margin-top: 1px; }
+.stat-card.danger .stat-value { color: var(–danger); }
+.stat-card.danger { border-color: var(–danger-dim); }
+.stat-loading { color: var(–text-dim); font-size: 14px; }
+
+/* ── Section ── */
+.section-title {
+padding: 10px 20px 8px; font-size: 10px; font-weight: 700;
+color: var(–text-dim); letter-spacing: 1.5px;
+}
+
+/* ── Menu Grid ── */
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 14px; }
+
+.menu-card {
+background: var(–bg-card); border: 1px solid var(–border);
+border-radius: 14px; padding: 16px 14px;
+cursor: pointer; position: relative; overflow: hidden;
+transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+text-decoration: none; color: inherit; display: block;
+}
+.menu-card:hover, .menu-card:focus {
+background: var(–bg-card-hover); border-color: var(–accent);
+transform: translateY(-1px); box-shadow: var(–shadow);
+}
+.menu-card:active { transform: translateY(0) scale(0.98); }
+
+.menu-icon {
+width: 38px; height: 38px; border-radius: 10px;
+display: flex; align-items: center; justify-content: center;
+font-size: 18px; margin-bottom: 10px;
+}
+.menu-icon.sales { background: var(–accent-dim); }
+.menu-icon.payment { background: var(–success-dim); }
+.menu-icon.invoice { background: var(–danger-dim); }
+.menu-icon.report { background: var(–info-dim); }
+.menu-icon.customer { background: var(–purple-dim); }
+.menu-icon.product { background: var(–pink-dim); }
+.menu-icon.csv { background: var(–success-dim); }
+
+.card-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.card-desc { font-size: 10px; color: var(–text-sub); line-height: 1.5; }
+.badge {
+position: absolute; top: 10px; right: 10px;
+background: var(–danger); color: #fff;
+font-size: 10px; font-weight: 700;
+padding: 2px 7px; border-radius: 10px; min-width: 20px; text-align: center;
+}
+.badge.hidden { display: none; }
+.menu-card.disabled { opacity: 0.45; pointer-events: none; }
+.coming-soon {
+position: absolute; top: 10px; right: 10px;
+font-size: 9px; color: var(–text-dim);
+background: var(–bg-sub); padding: 2px 6px; border-radius: 4px;
+letter-spacing: 0.5px;
+}
+
+/* ── CSV Export Card ── */
+.csv-card {
+margin: 0 16px 14px; background: var(–bg-card);
+border: 1px solid var(–border); border-radius: 14px;
+padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+cursor: pointer; transition: all 0.2s;
+}
+.csv-card:hover { border-color: var(–accent); }
+.csv-card:active { transform: scale(0.98); }
+.csv-card .csv-icon {
+width: 38px; height: 38px; background: var(–success-dim);
+border-radius: 10px; display: flex; align-items: center; justify-content: center;
+font-size: 18px; flex-shrink: 0;
+}
+.csv-card .csv-info .title { font-size: 13px; font-weight: 700; }
+.csv-card .csv-info .desc { font-size: 10px; color: var(–text-sub); margin-top: 2px; }
+
+/* ── Recent Activity ── */
+.activity-list { padding: 0 16px 16px; }
+.activity-item {
+display: flex; align-items: center; gap: 10px;
+padding: 11px 12px; background: var(–bg-card);
+border: 1px solid var(–border); border-radius: 10px;
+margin-bottom: 6px; transition: border-color 0.2s;
+cursor: pointer;
+}
+.activity-item:hover { border-color: var(–accent); }
+
+.activity-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.activity-dot.new { background: var(–accent); }
+.activity-dot.paid { background: var(–success); }
+.activity-dot.overdue { background: var(–danger); }
+
+.activity-info { flex: 1; min-width: 0; }
+.activity-info .title {
+font-size: 12px; font-weight: 500;
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.activity-info .meta { font-size: 10px; color: var(–text-sub); margin-top: 1px; }
+
+.activity-amount { font-size: 13px; font-weight: 700; flex-shrink: 0; white-space: nowrap; }
+.activity-amount.income { color: var(–success); }
+
+.activity-empty {
+text-align: center; padding: 24px; color: var(–text-dim);
+font-size: 13px; background: var(–bg-card);
+border: 1px solid var(–border); border-radius: 10px;
+}
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+width: 100%; max-width: 520px;
+background: var(–bg-sub); border-top: 1px solid var(–border);
+display: flex; justify-content: space-around;
+padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+z-index: 100;
+}
+.nav-item {
+display: flex; flex-direction: column; align-items: center; gap: 1px;
+font-size: 9px; color: var(–text-dim);
+cursor: pointer; padding: 4px 14px; border-radius: 8px;
+transition: color 0.2s;
+}
+.nav-item.active { color: var(–accent); }
+.nav-item .nav-icon { font-size: 18px; }
+
+/* ── Utilities ── */
+.hidden { display: none !important; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.3s ease-out both; }
+</style>
+
+<script>
+  // Flash prevention: apply saved theme before paint
+  (function(){
+    var t = localStorage.getItem('foo_sales_theme');
+    if (t === 'light') document.documentElement.setAttribute('data-theme','light');
+    else if (t === 'dark') document.documentElement.removeAttribute('data-theme');
+    else if (window.matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.setAttribute('data-theme','light');
+  })();
+</script>
+
+</head>
+<body>
+
+<!-- Loading -->
+
+<div class="app-loading" id="appLoading"><div class="spinner"></div></div>
+
+<!-- Auth Screen -->
+
+<div class="auth-screen" id="authScreen">
+  <div class="auth-box">
+    <div class="auth-logo">f.o.o</div>
+    <div class="auth-title">売上管理システム</div>
+    <div class="auth-subtitle">社員名とPINコードを入力してください</div>
+    <select class="auth-select" id="authName">
+      <option value="">社員名を選択</option>
+    </select>
+    <div class="auth-pin-wrap" id="pinWrap">
+      <input type="tel" maxlength="1" inputmode="numeric" data-idx="0">
+      <input type="tel" maxlength="1" inputmode="numeric" data-idx="1">
+      <input type="tel" maxlength="1" inputmode="numeric" data-idx="2">
+      <input type="tel" maxlength="1" inputmode="numeric" data-idx="3">
+    </div>
+    <button class="auth-btn" id="authBtn" disabled>ログイン</button>
+    <div class="auth-error" id="authError"></div>
+  </div>
+</div>
+
+<!-- Main App -->
+
+<div class="container hidden" id="mainApp">
+
+  <!-- Header -->
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">f.o.o</div>
+      <div class="header-title"><span>売上管理</span></div>
+    </div>
+    <div class="header-right">
+      <button class="header-btn" onclick="toggleTheme()" id="themeBtn" title="テーマ切替">🌙</button>
+      <button class="header-btn" onclick="doLogout()" title="ログアウト">🚪</button>
+    </div>
+  </div>
+
+  <!-- User Bar -->
+
+  <div class="user-bar">
+    <div><span class="name" id="userName"></span> さん</div>
+    <div id="todayDate"></div>
+  </div>
+
+  <!-- Dashboard Stats -->
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card">
+      <div class="stat-label">今月売上</div>
+      <div class="stat-value" id="statSales"><span class="stat-loading">--</span></div>
+      <div class="stat-unit">万円</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-label">未入金</div>
+      <div class="stat-value" id="statUnpaid"><span class="stat-loading">--</span></div>
+      <div class="stat-unit">件</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">今月件数</div>
+      <div class="stat-value" id="statCount"><span class="stat-loading">--</span></div>
+      <div class="stat-unit">件</div>
+    </div>
+  </div>
+
+  <!-- Main Menu -->
+
+  <div class="section-title">メインメニュー</div>
+  <div class="menu-grid">
+    <a class="menu-card disabled" href="sales-input.html" id="menuSalesInput">
+      <div class="menu-icon sales">📝</div>
+      <div class="card-title">売上入力</div>
+      <div class="card-desc">新規売上伝票を作成</div>
+      <span class="coming-soon">準備中</span>
+    </a>
+    <a class="menu-card disabled" href="payment.html" id="menuPayment">
+      <div class="menu-icon payment">💰</div>
+      <div class="card-title">入金管理</div>
+      <div class="card-desc">入金の記録・確認</div>
+      <span class="badge hidden" id="badgeUnpaid"></span>
+      <span class="coming-soon">準備中</span>
+    </a>
+    <a class="menu-card disabled" href="invoice.html" id="menuInvoice">
+      <div class="menu-icon invoice">📄</div>
+      <div class="card-title">請求書発行</div>
+      <div class="card-desc">請求書の作成・PDF出力</div>
+      <span class="coming-soon">準備中</span>
+    </a>
+    <a class="menu-card disabled" href="report.html" id="menuReport">
+      <div class="menu-icon report">📊</div>
+      <div class="card-title">売上レポート</div>
+      <div class="card-desc">月次・顧客別集計</div>
+      <span class="coming-soon">準備中</span>
+    </a>
+  </div>
+
+  <!-- Sub Menu -->
+
+  <div class="section-title">マスタ・設定</div>
+  <div class="menu-grid">
+    <a class="menu-card disabled" href="products.html" id="menuProducts">
+      <div class="menu-icon product">🏷️</div>
+      <div class="card-title">商品マスタ</div>
+      <div class="card-desc">品目・単価の管理</div>
+      <span class="coming-soon">準備中</span>
+    </a>
+    <a class="menu-card" href="https://mitsurumukaihata.github.io/foo-portal/index_2.html" id="menuCustomer">
+      <div class="menu-icon customer">👤</div>
+      <div class="card-title">顧客情報</div>
+      <div class="card-desc">顧客の登録・検索</div>
+    </a>
+  </div>
+
+  <!-- CSV Export -->
+
+  <div class="csv-card disabled" id="csvExport">
+    <div class="csv-icon">📤</div>
+    <div class="csv-info">
+      <div class="title">CSV出力（弥生会計連携）</div>
+      <div class="desc">売上データを弥生会計用にエクスポート</div>
+    </div>
+    <span class="coming-soon" style="position:static;">準備中</span>
+  </div>
+
+  <!-- Recent Activity -->
+
+  <div class="section-title">最近の売上</div>
+  <div class="activity-list" id="activityList">
+    <div class="activity-empty">データを読み込み中...</div>
+  </div>
+
+</div>
+
+<!-- Bottom Nav -->
+
+<div class="bottom-nav hidden" id="bottomNav">
+  <div class="nav-item active">
+    <span class="nav-icon">🏠</span><span>ホーム</span>
+  </div>
+  <div class="nav-item" onclick="alert('売上入力は準備中です')">
+    <span class="nav-icon">📝</span><span>売上入力</span>
+  </div>
+  <div class="nav-item" onclick="alert('検索機能は準備中です')">
+    <span class="nav-icon">🔍</span><span>検索</span>
+  </div>
+  <div class="nav-item" onclick="alert('設定は準備中です')">
+    <span class="nav-icon">⚙️</span><span>設定</span>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  CONFIG
+// ============================================================
+const WORKER = 'https://notion-proxy.33322666666mm.workers.dev';
+const DB = {
+  sales:    '58cc4a13-df03-435d-b14b-3439ef1f0a6f',
+  details:  '07bd2265-5e58-49fd-854b-ef1f4c4b5688',
+  payments: 'a43b48a8-4808-4be3-bc16-841ec0c8603a',
+  products: '21771ad9-a3f0-457e-a974-74b3499ca4a9',
+  customer: '1ca8d122-be21-4e38-9287-9932147143c9',
+  staff:    '08c5405729794337886b3565352ef96a'
+};
+const STAFF = [
+  '向畑 充','矢島 明和','大田 健','中川 颯',
+  '平野 春之','山根 祐司','村田 良典','岡崎 由美','藤井 真理亜'
+];
+const SESSION_KEY = 'foo_sales_session';
+const SESSION_DAYS = 30;
+
+// ============================================================
+//  NOTION API HELPERS
+// ============================================================
+async function notionPost(path, body) {
+  const res = await fetch(`${WORKER}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
+}
+
+async function queryDB(dbId, filter, sorts, pageSize) {
+  const body = {};
+  if (filter) body.filter = filter;
+  if (sorts) body.sorts = sorts;
+  if (pageSize) body.page_size = pageSize;
+  return notionPost(`/v1/databases/${dbId}/query`, body);
+}
+
+// ============================================================
+//  AUTH
+// ============================================================
+const $auth = document.getElementById('authScreen');
+const $main = document.getElementById('mainApp');
+const $nav = document.getElementById('bottomNav');
+const $loading = document.getElementById('appLoading');
+const $authName = document.getElementById('authName');
+const $authBtn = document.getElementById('authBtn');
+const $authError = document.getElementById('authError');
+const pinInputs = document.querySelectorAll('#pinWrap input');
+
+// Populate staff dropdown
+STAFF.forEach(name => {
+  const opt = document.createElement('option');
+  opt.value = name; opt.textContent = name;
+  $authName.appendChild(opt);
+});
+
+// PIN input handling
+pinInputs.forEach((inp, i) => {
+  inp.addEventListener('input', () => {
+    inp.value = inp.value.replace(/\D/g, '').slice(0, 1);
+    if (inp.value && i < 3) pinInputs[i + 1].focus();
+    checkAuthReady();
+  });
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Backspace' && !inp.value && i > 0) {
+      pinInputs[i - 1].focus();
+    }
+  });
+});
+$authName.addEventListener('change', checkAuthReady);
+
+function checkAuthReady() {
+  const pin = [...pinInputs].map(i => i.value).join('');
+  $authBtn.disabled = !($authName.value && pin.length === 4);
+}
+
+function getPin() { return [...pinInputs].map(i => i.value).join(''); }
+
+$authBtn.addEventListener('click', doLogin);
+
+async function doLogin() {
+  $authBtn.disabled = true;
+  $authError.textContent = '';
+  try {
+    const name = $authName.value;
+    const pin = getPin();
+    const data = await queryDB(DB.staff, {
+      and: [
+        { property: '社員名', select: { equals: name } },
+        { property: 'PINコード', rich_text: { equals: pin } }
+      ]
+    });
+    if (data.results && data.results.length > 0) {
+      const session = { name, ts: Date.now() };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      showApp(name);
+    } else {
+      $authError.textContent = '社員名またはPINコードが違います';
+      pinInputs.forEach(i => i.value = '');
+      pinInputs[0].focus();
+    }
+  } catch (e) {
+    $authError.textContent = '通信エラー。しばらくしてから再試行してください。';
+    console.error(e);
+  }
+  $authBtn.disabled = false;
+}
+
+function doLogout() {
+  if (!confirm('ログアウトしますか？')) return;
+  localStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+function checkSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (Date.now() - s.ts > SESSION_DAYS * 86400000) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return s.name;
+  } catch { return null; }
+}
+
+// ============================================================
+//  THEME
+// ============================================================
+function applyTheme() {
+  const saved = localStorage.getItem('foo_sales_theme');
+  const btn = document.getElementById('themeBtn');
+  if (saved === 'light' || (!saved && document.documentElement.hasAttribute('data-theme'))) {
+    document.documentElement.setAttribute('data-theme', 'light');
+    if (btn) btn.textContent = '☀️';
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    if (btn) btn.textContent = '🌙';
+  }
+}
+
+function toggleTheme() {
+  const isLight = document.documentElement.hasAttribute('data-theme');
+  if (isLight) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('foo_sales_theme', 'dark');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('foo_sales_theme', 'light');
+  }
+  applyTheme();
+}
+
+// ============================================================
+//  SHOW APP
+// ============================================================
+function showApp(name) {
+  $auth.classList.add('hide');
+  $main.classList.remove('hidden');
+  $nav.classList.remove('hidden');
+  document.getElementById('userName').textContent = name;
+
+  // Date
+  const now = new Date();
+  const days = ['日','月','火','水','木','金','土'];
+  document.getElementById('todayDate').textContent =
+    `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${days[now.getDay()]}）`;
+
+  applyTheme();
+  loadDashboard();
+}
+
+// ============================================================
+//  DASHBOARD DATA
+// ============================================================
+async function loadDashboard() {
+  $loading.classList.add('hide');
+
+  // Load stats and recent sales in parallel
+  try {
+    await Promise.all([loadStats(), loadRecent()]);
+  } catch (e) {
+    console.error('Dashboard load error:', e);
+  }
+}
+
+async function loadStats() {
+  const now = new Date();
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+
+  try {
+    // 今月の売上伝票を取得
+    const salesData = await queryDB(DB.sales, {
+      and: [
+        { property: '売上日', date: { on_or_after: monthStart } },
+        { property: 'ステータス', select: { does_not_equal: 'キャンセル' } }
+      ]
+    }, null, 100);
+
+    const count = salesData.results ? salesData.results.length : 0;
+    document.getElementById('statCount').textContent = count;
+
+    // 未入金件数
+    const unpaidCount = salesData.results ?
+      salesData.results.filter(r => {
+        const st = r.properties?.['ステータス']?.select?.name;
+        return st === '未請求' || st === '請求済' || st === '一部入金';
+      }).length : 0;
+    document.getElementById('statUnpaid').textContent = unpaidCount;
+
+    // 今月の売上合計を明細から取得
+    const detailsData = await queryDB(DB.details, {}, null, 100);
+    // 合計は明細の小計を合算（簡易版 — 今月分フィルタは伝票リレーション経由になるため、
+    // Phase1ではカウントのみ表示）
+    document.getElementById('statSales').textContent = '--';
+
+  } catch (e) {
+    console.error('Stats error:', e);
+    document.getElementById('statSales').textContent = '--';
+    document.getElementById('statUnpaid').textContent = '--';
+    document.getElementById('statCount').textContent = '--';
+  }
+}
+
+async function loadRecent() {
+  const $list = document.getElementById('activityList');
+
+  try {
+    const data = await queryDB(DB.sales, null, [
+      { property: '売上日', direction: 'descending' }
+    ], 8);
+
+    if (!data.results || data.results.length === 0) {
+      $list.innerHTML = '<div class="activity-empty">まだ売上データがありません</div>';
+      return;
+    }
+
+    // 顧客名を解決するため、顧客IDを収集
+    const customerIds = new Set();
+    data.results.forEach(r => {
+      const rels = r.properties?.['顧客名']?.relation;
+      if (rels) rels.forEach(rel => customerIds.add(rel.id));
+    });
+
+    // 顧客名を取得
+    const customerMap = {};
+    for (const cid of customerIds) {
+      try {
+        const page = await fetch(`${WORKER}/v1/pages/${cid}`, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const pData = await page.json();
+        const title = pData.properties?.['会社名']?.title;
+        if (title && title.length > 0) {
+          customerMap[cid] = title[0].plain_text;
+        }
+      } catch {}
+    }
+
+    let html = '';
+    data.results.forEach((r, i) => {
+      const props = r.properties;
+      const status = props?.['ステータス']?.select?.name || '';
+      const date = props?.['売上日']?.date?.start || '';
+      const staff = props?.['担当者']?.select?.name || '';
+      const payment = props?.['支払い方法']?.select?.name || '';
+
+      // 顧客名解決
+      const custRel = props?.['顧客名']?.relation;
+      let custName = '（顧客未設定）';
+      if (custRel && custRel.length > 0) {
+        custName = customerMap[custRel[0].id] || '（不明）';
+      }
+
+      // Dot color
+      let dotClass = 'new';
+      if (status === '入金済') dotClass = 'paid';
+      else if (status === '未請求' || status === '請求済') dotClass = 'overdue';
+
+      // Format date
+      const dateStr = date ? date.replace(/-/g, '/').slice(5) : '';
+
+      // Status label
+      let statusLabel = status;
+      if (payment && status !== '入金済') statusLabel = payment;
+
+      html += `
+        <div class="activity-item fade-in" style="animation-delay:${i * 0.05}s">
+          <div class="activity-dot ${dotClass}"></div>
+          <div class="activity-info">
+            <div class="title">${escHTML(custName)}</div>
+            <div class="meta">${dateStr} ・ ${escHTML(staff)} ・ ${escHTML(statusLabel)}</div>
+          </div>
+        </div>`;
+    });
+    $list.innerHTML = html;
+
+  } catch (e) {
+    console.error('Recent load error:', e);
+    $list.innerHTML = '<div class="activity-empty">データの読み込みに失敗しました</div>';
+  }
+}
+
+function escHTML(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  applyTheme();
+  const savedName = checkSession();
+  if (savedName) {
+    showApp(savedName);
+  } else {
+    $loading.classList.add('hide');
+    $auth.classList.remove('hide');
+  }
+});
+</script>
+
+</body>
+</html>
