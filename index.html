@@ -144,10 +144,10 @@ display: flex; gap: 8px; justify-content: center;
 margin-bottom: 16px;
 }
 .auth-pin-wrap input {
-width: 52px; height: 56px;
+width: 44px; height: 52px;
 background: var(–bg-card); color: var(–text);
 border: 1px solid var(–border); border-radius: 10px;
-font-family: inherit; font-size: 22px; font-weight: 700;
+font-family: inherit; font-size: 20px; font-weight: 700;
 text-align: center;
 outline: none;
 transition: border-color 0.2s;
@@ -370,7 +370,7 @@ transition: color 0.2s;
   <div class="auth-box">
     <div class="auth-logo">f.o.o</div>
     <div class="auth-title">売上管理システム</div>
-    <div class="auth-subtitle">社員名とPINコードを入力してください</div>
+    <div class="auth-subtitle">社員名とPINコード（6桁）を入力してください</div>
     <select class="auth-select" id="authName">
       <option value="">社員名を選択</option>
     </select>
@@ -379,6 +379,8 @@ transition: color 0.2s;
       <input type="tel" maxlength="1" inputmode="numeric" data-idx="1">
       <input type="tel" maxlength="1" inputmode="numeric" data-idx="2">
       <input type="tel" maxlength="1" inputmode="numeric" data-idx="3">
+      <input type="tel" maxlength="1" inputmode="numeric" data-idx="4">
+      <input type="tel" maxlength="1" inputmode="numeric" data-idx="5">
     </div>
     <button class="auth-btn" id="authBtn" disabled>ログイン</button>
     <div class="auth-error" id="authError"></div>
@@ -525,12 +527,9 @@ const DB = {
   payments: 'a43b48a8-4808-4be3-bc16-841ec0c8603a',
   products: '21771ad9-a3f0-457e-a974-74b3499ca4a9',
   customer: '1ca8d122-be21-4e38-9287-9932147143c9',
-  staff:    '08c5405729794337886b3565352ef96a'
+  staff:    '277c2e91-fe10-46fe-bf55-f924a9726cbb'
 };
-const STAFF = [
-  '向畑 充','矢島 明和','大田 健','中川 颯',
-  '平野 春之','山根 祐司','村田 良典','岡崎 由美','藤井 真理亜'
-];
+const STAFF = ['向畑 充','岡崎 由美'];
 const SESSION_KEY = 'foo_sales_session';
 const SESSION_DAYS = 30;
 
@@ -578,7 +577,7 @@ STAFF.forEach(name => {
 pinInputs.forEach((inp, i) => {
   inp.addEventListener('input', () => {
     inp.value = inp.value.replace(/\D/g, '').slice(0, 1);
-    if (inp.value && i < 3) pinInputs[i + 1].focus();
+    if (inp.value && i < 5) pinInputs[i + 1].focus();
     checkAuthReady();
   });
   inp.addEventListener('keydown', (e) => {
@@ -591,7 +590,7 @@ $authName.addEventListener('change', checkAuthReady);
 
 function checkAuthReady() {
   const pin = [...pinInputs].map(i => i.value).join('');
-  $authBtn.disabled = !($authName.value && pin.length === 4);
+  $authBtn.disabled = !($authName.value && pin.length === 6);
 }
 
 function getPin() { return [...pinInputs].map(i => i.value).join(''); }
@@ -606,8 +605,9 @@ async function doLogin() {
     const pin = getPin();
     const data = await queryDB(DB.staff, {
       and: [
-        { property: '社員名', select: { equals: name } },
-        { property: 'PINコード', rich_text: { equals: pin } }
+        { property: '社員名', title: { equals: name } },
+        { property: 'PINコード', rich_text: { equals: pin } },
+        { property: '有効', checkbox: { equals: true } }
       ]
     });
     if (data.results && data.results.length > 0) {
