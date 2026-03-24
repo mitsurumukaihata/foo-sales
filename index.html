@@ -410,6 +410,48 @@ background: var(–bg-sub); padding: 2px 6px; border-radius: 4px;
 letter-spacing: 0.5px;
 }
 
+/* ── Open in New Window Button (PC only) ── */
+.btn-newwin {
+display: none;
+}
+@media (min-width: 768px) {
+  .menu-card {
+    position: relative;
+  }
+  .menu-card:not(.disabled) .btn-newwin {
+    display: flex;
+    position: absolute; bottom: 10px; right: 10px;
+    width: 28px; height: 28px;
+    align-items: center; justify-content: center;
+    background: var(--bg-sub); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer;
+    font-size: 13px; color: var(--text-sub);
+    transition: all 0.2s; z-index: 2;
+    text-decoration: none;
+  }
+  .menu-card:not(.disabled) .btn-newwin:hover {
+    background: var(--accent); color: #fff;
+    border-color: var(--accent);
+    transform: scale(1.1);
+  }
+  .menu-card:not(.disabled) .btn-newwin:active {
+    transform: scale(0.95);
+  }
+  .csv-card .btn-newwin-csv {
+    display: flex;
+    width: 28px; height: 28px;
+    align-items: center; justify-content: center;
+    background: var(--bg-sub); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer;
+    font-size: 13px; color: var(--text-sub);
+    transition: all 0.2s; margin-left: auto; flex-shrink: 0;
+  }
+  .csv-card .btn-newwin-csv:hover {
+    background: var(--accent); color: #fff;
+    border-color: var(--accent);
+  }
+}
+
 /* ── CSV Export Card ── */
 .csv-card {
 margin: 0 16px 14px; background: var(–bg-card);
@@ -580,12 +622,14 @@ transition: color 0.2s;
           <div class="menu-icon sales">📝</div>
           <div class="card-title">売上入力</div>
           <div class="card-desc">新規売上伝票を作成</div>
+          <span class="btn-newwin" title="別窓で開く" onclick="openNewWin(event,'sales-input.html')">⧉</span>
           <span class="coming-soon">準備中</span>
         </a>
         <a class="menu-card disabled" href="payment.html" id="menuPayment">
           <div class="menu-icon payment">💰</div>
           <div class="card-title">入金管理</div>
           <div class="card-desc">入金の記録・確認</div>
+          <span class="btn-newwin" title="別窓で開く" onclick="openNewWin(event,'payment.html')">⧉</span>
           <span class="badge hidden" id="badgeUnpaid"></span>
           <span class="coming-soon">準備中</span>
         </a>
@@ -593,12 +637,14 @@ transition: color 0.2s;
           <div class="menu-icon invoice">📄</div>
           <div class="card-title">請求書発行</div>
           <div class="card-desc">請求書の作成・PDF出力</div>
+          <span class="btn-newwin" title="別窓で開く" onclick="openNewWin(event,'invoice.html')">⧉</span>
           <span class="coming-soon">準備中</span>
         </a>
         <a class="menu-card disabled" href="report.html" id="menuReport">
           <div class="menu-icon report">📊</div>
           <div class="card-title">売上レポート</div>
           <div class="card-desc">月次・顧客別集計</div>
+          <span class="btn-newwin" title="別窓で開く" onclick="openNewWin(event,'report.html')">⧉</span>
           <span class="coming-soon">準備中</span>
         </a>
       </div>
@@ -611,12 +657,14 @@ transition: color 0.2s;
           <div class="menu-icon product">🏷️</div>
           <div class="card-title">商品マスタ</div>
           <div class="card-desc">品目・単価の管理</div>
+          <span class="btn-newwin" title="別窓で開く" onclick="openNewWin(event,'products.html')">⧉</span>
           <span class="coming-soon">準備中</span>
         </a>
         <a class="menu-card" href="https://mitsurumukaihata.github.io/foo-portal/index_2.html" id="menuCustomer">
           <div class="menu-icon customer">👤</div>
           <div class="card-title">顧客情報</div>
           <div class="card-desc">顧客の登録・検索</div>
+          <span class="btn-newwin" title="別窓で開く" onclick="openNewWin(event,'https://mitsurumukaihata.github.io/foo-portal/index_2.html')">⧉</span>
         </a>
       </div>
 
@@ -808,6 +856,16 @@ function doLogout() {
   if (!confirm('ログアウトしますか？')) return;
   localStorage.removeItem(SESSION_KEY);
   location.reload();
+}
+
+/* ── 別窓で開く（マルチモニター対応） ── */
+function openNewWin(e, url) {
+  e.preventDefault();
+  e.stopPropagation();
+  // ページ名からウィンドウ名を生成（同じページは同じウィンドウに開く）
+  const winName = 'foo_' + url.replace(/[^a-zA-Z0-9]/g, '_');
+  const w = window.open(url, winName, 'width=1200,height=900,menubar=no,toolbar=no,location=yes,status=no,resizable=yes,scrollbars=yes');
+  if (w) w.focus();
 }
 
 function checkSession() {
