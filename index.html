@@ -81,6 +81,142 @@ margin: 0 auto;
 padding-bottom: 90px;
 }
 
+/* ── PC Dashboard Grid ── */
+.dashboard-grid { display: block; }
+.dash-left, .dash-right { width: 100%; }
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 1200px;
+    padding: 0 32px 32px 32px;
+  }
+
+  .header {
+    padding: 16px 24px 12px;
+  }
+
+  .user-bar {
+    padding: 12px 24px;
+  }
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 0 8px;
+  }
+
+  /* Stats - bigger on PC */
+  .stats-row {
+    gap: 12px;
+    padding: 4px 0 16px;
+  }
+
+  .stat-card {
+    padding: 16px 12px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+
+  /* Menu - 3 columns on PC */
+  .menu-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 0 0 16px;
+  }
+
+  .menu-card {
+    padding: 18px 16px;
+  }
+
+  /* Activity list wider */
+  .activity-list {
+    padding: 0 0 16px;
+  }
+
+  .activity-item {
+    padding: 14px 16px;
+  }
+
+  /* CSV card */
+  .csv-card {
+    margin: 0 0 16px;
+  }
+
+  /* Section title */
+  .section-title {
+    padding: 12px 0 8px;
+  }
+
+  /* Hide bottom nav on PC */
+  .bottom-nav {
+    display: none !important;
+  }
+
+  /* Quick panel */
+  .quick-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .quick-card {
+    background: var(–bg-card);
+    border: 1px solid var(–border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .quick-label {
+    font-size: 11px;
+    color: var(–text-sub);
+    margin-bottom: 6px;
+  }
+
+  .quick-value {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(–accent);
+  }
+}
+
+/* On mobile, quick panel */
+@media (max-width: 767px) {
+  .quick-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0 16px 16px;
+  }
+
+  .quick-card {
+    background: var(–bg-card);
+    border: 1px solid var(–border);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .quick-label {
+    font-size: 10px;
+    color: var(–text-sub);
+    margin-bottom: 4px;
+  }
+
+  .quick-value {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(–accent);
+  }
+}
+
 /* ── Loading / Flash Prevention ── */
 .app-loading {
 position: fixed; inset: 0; z-index: 9999;
@@ -411,90 +547,114 @@ transition: color 0.2s;
     <div id="todayDate"></div>
   </div>
 
-  <!-- Dashboard Stats -->
+  <!-- Dashboard Grid -->
 
-  <div class="stats-row" id="statsRow">
-    <div class="stat-card">
-      <div class="stat-label">今月売上</div>
-      <div class="stat-value" id="statSales"><span class="stat-loading">--</span></div>
-      <div class="stat-unit">万円</div>
+  <div class="dashboard-grid">
+    <!-- Left Column -->
+    <div class="dash-left">
+      <!-- Dashboard Stats -->
+
+      <div class="stats-row" id="statsRow">
+        <div class="stat-card">
+          <div class="stat-label">今月売上</div>
+          <div class="stat-value" id="statSales"><span class="stat-loading">--</span></div>
+          <div class="stat-unit">万円</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-label">未入金</div>
+          <div class="stat-value" id="statUnpaid"><span class="stat-loading">--</span></div>
+          <div class="stat-unit">件</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">今月件数</div>
+          <div class="stat-value" id="statCount"><span class="stat-loading">--</span></div>
+          <div class="stat-unit">件</div>
+        </div>
+      </div>
+
+      <!-- Main Menu -->
+
+      <div class="section-title">メインメニュー</div>
+      <div class="menu-grid">
+        <a class="menu-card disabled" href="sales-input.html" id="menuSalesInput">
+          <div class="menu-icon sales">📝</div>
+          <div class="card-title">売上入力</div>
+          <div class="card-desc">新規売上伝票を作成</div>
+          <span class="coming-soon">準備中</span>
+        </a>
+        <a class="menu-card disabled" href="payment.html" id="menuPayment">
+          <div class="menu-icon payment">💰</div>
+          <div class="card-title">入金管理</div>
+          <div class="card-desc">入金の記録・確認</div>
+          <span class="badge hidden" id="badgeUnpaid"></span>
+          <span class="coming-soon">準備中</span>
+        </a>
+        <a class="menu-card disabled" href="invoice.html" id="menuInvoice">
+          <div class="menu-icon invoice">📄</div>
+          <div class="card-title">請求書発行</div>
+          <div class="card-desc">請求書の作成・PDF出力</div>
+          <span class="coming-soon">準備中</span>
+        </a>
+        <a class="menu-card disabled" href="report.html" id="menuReport">
+          <div class="menu-icon report">📊</div>
+          <div class="card-title">売上レポート</div>
+          <div class="card-desc">月次・顧客別集計</div>
+          <span class="coming-soon">準備中</span>
+        </a>
+      </div>
+
+      <!-- Sub Menu -->
+
+      <div class="section-title">マスタ・設定</div>
+      <div class="menu-grid">
+        <a class="menu-card disabled" href="products.html" id="menuProducts">
+          <div class="menu-icon product">🏷️</div>
+          <div class="card-title">商品マスタ</div>
+          <div class="card-desc">品目・単価の管理</div>
+          <span class="coming-soon">準備中</span>
+        </a>
+        <a class="menu-card" href="https://mitsurumukaihata.github.io/foo-portal/index_2.html" id="menuCustomer">
+          <div class="menu-icon customer">👤</div>
+          <div class="card-title">顧客情報</div>
+          <div class="card-desc">顧客の登録・検索</div>
+        </a>
+      </div>
+
+      <!-- CSV Export -->
+
+      <div class="csv-card disabled" id="csvExport">
+        <div class="csv-icon">📤</div>
+        <div class="csv-info">
+          <div class="title">CSV出力（弥生会計連携）</div>
+          <div class="desc">売上データを弥生会計用にエクスポート</div>
+        </div>
+        <span class="coming-soon" style="position:static;">準備中</span>
+      </div>
     </div>
-    <div class="stat-card danger">
-      <div class="stat-label">未入金</div>
-      <div class="stat-value" id="statUnpaid"><span class="stat-loading">--</span></div>
-      <div class="stat-unit">件</div>
+
+    <!-- Right Column -->
+    <div class="dash-right">
+      <!-- Recent Activity -->
+
+      <div class="section-title">最近の売上</div>
+      <div class="activity-list" id="activityList">
+        <div class="activity-empty">データを読み込み中...</div>
+      </div>
+
+      <!-- Quick Info Panel -->
+
+      <div class="section-title">クイック情報</div>
+      <div class="quick-panel">
+        <div class="quick-card" id="quickTodaySales">
+          <div class="quick-label">今日の売上件数</div>
+          <div class="quick-value" id="todaySalesCount">--</div>
+        </div>
+        <div class="quick-card" id="quickTopCustomer">
+          <div class="quick-label">今月トップ顧客</div>
+          <div class="quick-value" id="topCustomerName">--</div>
+        </div>
+      </div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">今月件数</div>
-      <div class="stat-value" id="statCount"><span class="stat-loading">--</span></div>
-      <div class="stat-unit">件</div>
-    </div>
-  </div>
-
-  <!-- Main Menu -->
-
-  <div class="section-title">メインメニュー</div>
-  <div class="menu-grid">
-    <a class="menu-card disabled" href="sales-input.html" id="menuSalesInput">
-      <div class="menu-icon sales">📝</div>
-      <div class="card-title">売上入力</div>
-      <div class="card-desc">新規売上伝票を作成</div>
-      <span class="coming-soon">準備中</span>
-    </a>
-    <a class="menu-card disabled" href="payment.html" id="menuPayment">
-      <div class="menu-icon payment">💰</div>
-      <div class="card-title">入金管理</div>
-      <div class="card-desc">入金の記録・確認</div>
-      <span class="badge hidden" id="badgeUnpaid"></span>
-      <span class="coming-soon">準備中</span>
-    </a>
-    <a class="menu-card disabled" href="invoice.html" id="menuInvoice">
-      <div class="menu-icon invoice">📄</div>
-      <div class="card-title">請求書発行</div>
-      <div class="card-desc">請求書の作成・PDF出力</div>
-      <span class="coming-soon">準備中</span>
-    </a>
-    <a class="menu-card disabled" href="report.html" id="menuReport">
-      <div class="menu-icon report">📊</div>
-      <div class="card-title">売上レポート</div>
-      <div class="card-desc">月次・顧客別集計</div>
-      <span class="coming-soon">準備中</span>
-    </a>
-  </div>
-
-  <!-- Sub Menu -->
-
-  <div class="section-title">マスタ・設定</div>
-  <div class="menu-grid">
-    <a class="menu-card disabled" href="products.html" id="menuProducts">
-      <div class="menu-icon product">🏷️</div>
-      <div class="card-title">商品マスタ</div>
-      <div class="card-desc">品目・単価の管理</div>
-      <span class="coming-soon">準備中</span>
-    </a>
-    <a class="menu-card" href="https://mitsurumukaihata.github.io/foo-portal/index_2.html" id="menuCustomer">
-      <div class="menu-icon customer">👤</div>
-      <div class="card-title">顧客情報</div>
-      <div class="card-desc">顧客の登録・検索</div>
-    </a>
-  </div>
-
-  <!-- CSV Export -->
-
-  <div class="csv-card disabled" id="csvExport">
-    <div class="csv-icon">📤</div>
-    <div class="csv-info">
-      <div class="title">CSV出力（弥生会計連携）</div>
-      <div class="desc">売上データを弥生会計用にエクスポート</div>
-    </div>
-    <span class="coming-soon" style="position:static;">準備中</span>
-  </div>
-
-  <!-- Recent Activity -->
-
-  <div class="section-title">最近の売上</div>
-  <div class="activity-list" id="activityList">
-    <div class="activity-empty">データを読み込み中...</div>
   </div>
 
 </div>
