@@ -848,7 +848,7 @@
                 page_size: pageSize,
                 start_cursor: startCursor || undefined
             };
-            return notionPost(`/v1/databases/${dbId}/query`, body);
+            return notionPost(`/databases/${dbId}/query`, body);
         }
 
         // ==================== SESSION & THEME ====================
@@ -937,7 +937,7 @@
                 const customerMap = {};
                 for (const cid of customerIds) {
                     try {
-                        const pg = await notionGet(`/v1/pages/${cid}`);
+                        const pg = await notionGet(`/pages/${cid}`);
                         const t = pg.properties?.['会社名']?.title;
                         if (t && t.length > 0) customerMap[cid] = t[0].plain_text;
                     } catch {}
@@ -1286,7 +1286,7 @@
                     }
                 };
 
-                const salesRes = await notionPost('/v1/pages', salesPageReq);
+                const salesRes = await notionPost('/pages', salesPageReq);
                 const salesPageId = salesRes.id;
 
                 // Create detail lines
@@ -1334,7 +1334,7 @@
                         }
                     };
 
-                    await notionPost('/v1/pages', detailReq);
+                    await notionPost('/pages', detailReq);
                 }
 
                 // Show success modal

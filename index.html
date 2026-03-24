@@ -552,7 +552,7 @@ async function queryDB(dbId, filter, sorts, pageSize) {
   if (filter) body.filter = filter;
   if (sorts) body.sorts = sorts;
   if (pageSize) body.page_size = pageSize;
-  return notionPost(`/v1/databases/${dbId}/query`, body);
+  return notionPost(`/databases/${dbId}/query`, body);
 }
 
 // ============================================================
@@ -785,7 +785,7 @@ async function loadRecent() {
     const customerMap = {};
     for (const cid of customerIds) {
       try {
-        const page = await fetch(`${WORKER}/v1/pages/${cid}`, {
+        const page = await fetch(`${WORKER}/pages/${cid}`, {
           headers: { 'Content-Type': 'application/json' }
         });
         const pData = await page.json();
