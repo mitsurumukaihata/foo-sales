@@ -527,7 +527,7 @@ const DB = {
   payments: 'a43b48a8-4808-4be3-bc16-841ec0c8603a',
   products: '21771ad9-a3f0-457e-a974-74b3499ca4a9',
   customer: '1ca8d122-be21-4e38-9287-9932147143c9',
-  staff:    '08c54057-2979-4337-886b-3565352ef96a'
+  staff:    '08c5405729794337886b3565352ef96a'
 };
 // 社員名はNotionから動的取得（initで読み込み）
 let STAFF = [];
@@ -623,11 +623,12 @@ async function doLogin() {
     const data = await queryDB(DB.staff, {
       and: [
         { property: '氏名', title: { equals: name } },
-        { property: 'PIN', rich_text: { equals: pin } },
         { property: '在籍', select: { equals: '在籍中' } }
       ]
-    });
-    if (data.results && data.results.length > 0) {
+    }, null, 1);
+    if (!data.results?.length) throw new Error('社員情報が見つかりません');
+    const storedPin = data.results[0].properties['PIN']?.rich_text?.[0]?.plain_text || '';
+    if (storedPin === pin) {
       const session = { name, ts: Date.now() };
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       showApp(name);
