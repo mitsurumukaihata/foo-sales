@@ -637,7 +637,8 @@
                     </div>
                     <div class="form-group">
                         <label for="carNumber">車番</label>
-                        <input type="text" id="carNumber" placeholder="12-34">
+                        <input type="text" id="carNumber" placeholder="広島１００わ４５－１２" onblur="normalizeCarNumber()">
+                        <div id="carNumberWarn" style="font-size:11px;color:#d97706;margin-top:4px;display:none;">⚠️ プレフィックス（地名・分類番号・ひらがな）が未入力です。後日確認として記録されます。</div>
                     </div>
                 </div>
 
@@ -673,7 +674,8 @@
                     </div>
                     <div class="form-group">
                         <label for="adminNumber">管理番号</label>
-                        <input type="text" id="adminNumber" placeholder="ドア番号">
+                        <input type="text" id="adminNumber" placeholder="ドア番号（全角）" onblur="normalizeAdminNumber()">
+                        <div id="adminNumberWarn" style="font-size:11px;color:#d97706;margin-top:4px;display:none;">⚠️ プレフィックスが未入力です。後日確認として記録されます。</div>
                     </div>
                 </div>
 
@@ -693,6 +695,7 @@
                             <option value="来店">来店</option>
                             <option value="配達">配達</option>
                             <option value="引き取り">引き取り</option>
+                            <option value="出張作業">出張作業</option>
                             <option value="その他">その他</option>
                         </select>
                     </div>
@@ -914,6 +917,68 @@
                 clearTimeout(timeout);
                 timeout = setTimeout(() => fn(...args), delay);
             };
+        }
+
+        // ==================== 全角変換 & 車番・管理番号 検証 ====================
+        // 半角 → 全角（英数字・記号・ハイフン・スペース）
+        function toFullWidth(str) {
+            if (!str) return '';
+            let s = str
+                // 半角数字 → 全角数字
+                .replace(/[0-9]/g, c => String.fromCharCode(c.charCodeAt(0) + 0xFEE0))
+                // 半角英字 → 全角英字
+                .replace(/[a-zA-Z]/g, c => String.fromCharCode(c.charCodeAt(0) + 0xFEE0))
+                // 各種ハイフン → 全角ハイフン「ー」（長音）
+                .replace(/[-－‐‑‒–—―−ｰ]/g, 'ー')
+                // 半角スペース → 全角スペース（前後の空白は落とす）
+                .trim()
+                .replace(/ /g, '　');
+            return s;
+        }
+
+        // 車番の完全性チェック
+        // 完全形式: 地名（漢字/ひらがな1-3文字）+ 分類番号（3桁全角数字）+ ひらがな1文字 + 全角数字2桁 + ー + 全角数字2桁
+        // 例: 広島１００わ４５ー１２
+        // 不完全（後日確認対象）: 数字ハイフン数字のみ（例: ４５ー１２, 12-34）
+        function isCompleteCarNumber(str) {
+            if (!str) return true; // 空欄は後日確認しない（未入力）
+            const s = str.replace(/\s+/g, '');
+            // プレフィックス（漢字/ひらがな）が含まれているか判定
+            // 漢字: \u4E00-\u9FFF, ひらがな: \u3040-\u309F
+            // ただし数字と長音符（ー）のみの場合は不完全
+            const hasJapaneseChar = /[\u4E00-\u9FFF\u3040-\u309F]/.test(s);
+            return hasJapaneseChar;
+        }
+
+        // 管理番号の完全性チェック（数字ハイフン数字だけなら不完全）
+        function isCompleteAdminNumber(str) {
+            if (!str) return true;
+            const s = str.replace(/\s+/g, '');
+            // 数字と長音符（ー、ハイフン）だけなら不完全
+            const onlyNumDash = /^[0-9０-９ー\-－]+$/.test(s);
+            return !onlyNumDash;
+        }
+
+        function normalizeCarNumber() {
+            const inp = document.getElementById('carNumber');
+            const warn = document.getElementById('carNumberWarn');
+            if (!inp) return;
+            const raw = inp.value;
+            if (!raw) { warn.style.display = 'none'; return; }
+            const normalized = toFullWidth(raw);
+            inp.value = normalized;
+            warn.style.display = isCompleteCarNumber(normalized) ? 'none' : 'block';
+        }
+
+        function normalizeAdminNumber() {
+            const inp = document.getElementById('adminNumber');
+            const warn = document.getElementById('adminNumberWarn');
+            if (!inp) return;
+            const raw = inp.value;
+            if (!raw) { warn.style.display = 'none'; return; }
+            const normalized = toFullWidth(raw);
+            inp.value = normalized;
+            warn.style.display = isCompleteAdminNumber(normalized) ? 'none' : 'block';
         }
 
         // ==================== CAR NUMBER SEARCH ====================
@@ -1245,7 +1310,24 @@
             try {
                 // Create sales slip
                 const salesDate = document.getElementById('salesDate').value;
-                const slipTitle = `${salesDate.replace(/-/g, '/')} ${customerName}`;
+                // 車番・管理番号を全角正規化
+                const carNumber = toFullWidth(document.getElementById('carNumber').value || '');
+                const adminNumber = toFullWidth(document.getElementById('adminNumber').value || '');
+                document.getElementById('carNumber').value = carNumber;
+                document.getElementById('adminNumber').value = adminNumber;
+
+                // 伝票タイトル: YYYY/MM/DD 顧客名 車番（車番があれば含める）
+                let slipTitle = `${salesDate.replace(/-/g, '/')} ${customerName}`;
+                if (carNumber) slipTitle += ` ${carNumber}`;
+
+                // 要確認フラグ判定
+                const carIncomplete = carNumber && !isCompleteCarNumber(carNumber);
+                const adminIncomplete = adminNumber && !isCompleteAdminNumber(adminNumber);
+                const needsReview = carIncomplete || adminIncomplete;
+                const reviewItems = [];
+                if (carIncomplete) reviewItems.push('車番プレフィックス未入力（地名・分類番号・ひらがな）');
+                if (adminIncomplete) reviewItems.push('管理番号プレフィックス未入力');
+                const reviewText = reviewItems.join(' / ');
 
                 const salesPageReq = {
                     parent: { database_id: DB.sales },
@@ -1266,10 +1348,10 @@
                             select: { name: document.getElementById('staff').value }
                         },
                         '車番': {
-                            rich_text: [{ text: { content: document.getElementById('carNumber').value } }]
+                            rich_text: [{ text: { content: carNumber } }]
                         },
                         '管理番号': {
-                            rich_text: [{ text: { content: document.getElementById('adminNumber').value } }]
+                            rich_text: [{ text: { content: adminNumber } }]
                         },
                         '作業区分': {
                             select: { name: document.getElementById('workType').value }
@@ -1288,6 +1370,12 @@
                         },
                         '備考': {
                             rich_text: chunkRichText(document.getElementById('notes').value)
+                        },
+                        '要確認': {
+                            checkbox: needsReview
+                        },
+                        '確認項目': {
+                            rich_text: reviewText ? [{ text: { content: reviewText } }] : []
                         }
                     }
                 };
