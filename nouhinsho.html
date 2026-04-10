@@ -295,6 +295,7 @@ async function generateNouhinsho(slipId) {
         size: dp['タイヤサイズ']?.rich_text?.[0]?.plain_text || '',
         brand: dp['タイヤ銘柄']?.rich_text?.[0]?.plain_text || '',
         hinmoku: dp['品目']?.select?.name || '',
+        yayoiBikou: dp['弥生備考']?.rich_text?.[0]?.plain_text || '',
       });
     }
 
@@ -340,7 +341,13 @@ function buildNouhinshoHTML(slip, custName, custZip, custAddr, custCode, details
   let rowsHtml = '';
   details.forEach((d, i) => {
     const taxLabel = bikouDisplay(d);
-    const bikoWithCar = i === 0 && slip.carNo ? taxLabel + ' ' + slip.carNo : taxLabel;
+    // 備考: 税区分 + 弥生備考（エンドユーザー名・車番・管理番号等）
+    let bikoParts = taxLabel;
+    if (d.yayoiBikou) {
+      bikoParts += ' ' + d.yayoiBikou;
+    } else if (i === 0 && slip.carNo) {
+      bikoParts += ' ' + slip.carNo;
+    }
     // 上段: 商品コード（小さい文字）
     rowsHtml += `<tr class="code-row"><td colspan="6" style="font-size:9px;color:#666;padding:2px 8px 0;border-bottom:none;">${esc(d.code)}</td></tr>`;
     // 下段: 商品名 + 数量等
@@ -350,7 +357,7 @@ function buildNouhinshoHTML(slip, custName, custZip, custAddr, custCode, details
       <td style="text-align:center;">${d.unit || ''}</td>
       <td class="num">${d.price ? yen(d.price) : ''}</td>
       <td class="num">${d.amount ? yen(d.amount) : ''}</td>
-      <td class="biko">${esc(bikoWithCar)}</td>
+      <td class="biko">${esc(bikoParts)}</td>
     </tr>`;
   });
   // 空行を埋める（最低15行）
