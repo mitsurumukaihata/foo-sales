@@ -113,6 +113,10 @@ const WORKER = 'https://notion-proxy.33322666666mm.workers.dev';
 const SALES_DB = '58cc4a13df03435db14b3439ef1f0a6f';
 const DETAIL_DB = '07bd22655e5849fd854bef1f4c4b5688';
 const CUST_DB = '1ca8d122be214e3892879932147143c9';
+const TOKUISAKI_DB = 'f632f512f12d49b2b11f2b3e45c70aec'; // 得意先マスタ（住所・TEL等）
+
+// 得意先マスタのキャッシュ（得意先コード → { zip, address, tel, fax }）
+let tokuisakiCache = null;
 
 // 自社情報
 const COMPANY = {
@@ -132,6 +136,34 @@ async function notionAPI(method, path, body) {
     body: body ? JSON.stringify(body) : undefined,
   });
   return res.json();
+}
+
+// 得意先マスタを一括取得してキャッシュ
+async function loadTokuisaki() {
+  if (tokuisakiCache) return tokuisakiCache;
+  const map = new Map();
+  let cursor = null;
+  do {
+    const body = { page_size: 100 };
+    if (cursor) body.start_cursor = cursor;
+    const res = await notionAPI('POST', `/databases/${TOKUISAKI_DB}/query`, body);
+    (res.results || []).forEach(r => {
+      const p = r.properties;
+      const code = p['得意先コード']?.rich_text?.[0]?.plain_text || '';
+      if (code) {
+        map.set(code, {
+          name: p['得意先名']?.title?.[0]?.plain_text || '',
+          zip: p['郵便番号']?.rich_text?.[0]?.plain_text || '',
+          address: p['住所']?.rich_text?.[0]?.plain_text || '',
+          tel: p['TEL']?.phone_number || '',
+          fax: p['FAX']?.rich_text?.[0]?.plain_text || '',
+        });
+      }
+    });
+    cursor = res.has_more ? res.next_cursor : null;
+  } while (cursor);
+  tokuisakiCache = map;
+  return map;
 }
 
 // 伝票一覧を取得
@@ -217,16 +249,25 @@ async function generateNouhinsho(slipId) {
   document.getElementById('slip-list').innerHTML = '<div class="loading">納品書を生成中...</div>';
 
   try {
-    // 顧客情報を取得
+    // 顧客情報を取得（顧客情報DB → 弥生コード → 得意先マスタで住所取得）
     let custName = '', custZip = '', custAddr = '', custCode = '';
     if (slip.custRelId) {
       const custRes = await notionAPI('GET', `/pages/${slip.custRelId}`);
       const cp = custRes.properties || {};
       custName = cp['会社名']?.title?.[0]?.plain_text || '';
       custCode = cp['弥生得意先コード']?.rich_text?.[0]?.plain_text || '';
-      // 住所は将来追加（現在は空）
-      custZip = cp['郵便番号']?.rich_text?.[0]?.plain_text || '';
-      custAddr = cp['住所']?.rich_text?.[0]?.plain_text || '';
+      // 得意先マスタから住所・郵便番号を取得
+      const tMap = await loadTokuisaki();
+      // カンマ区切りの弥生コード（076,07601等）に対応
+      const codes = custCode.split(',').map(c => c.trim());
+      for (const code of codes) {
+        const t = tMap.get(code);
+        if (t && t.zip) {
+          custZip = t.zip;
+          custAddr = t.address;
+          break;
+        }
+      }
     }
 
     // 明細を取得
