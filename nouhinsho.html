@@ -338,12 +338,17 @@ function buildNouhinshoHTML(slip, custName, custZip, custAddr, custCode, details
 
   // 明細行HTML（商品コードと商品名を弥生と同じ2段表示）
   let rowsHtml = '';
+  // 弥生備考があるか全体チェック（なければ車番フォールバック用）
+  const hasAnyYayoiBikou = details.some(d => d.yayoiBikou);
+
   details.forEach((d, i) => {
     const taxLabel = bikouDisplay(d);
+    // 備考: 弥生備考をそのまま使う（車番は弥生がタイヤサイズ行に入れている）
     let bikoParts = taxLabel;
     if (d.yayoiBikou) {
       bikoParts += ' ' + d.yayoiBikou;
-    } else if (i === 0 && slip.carNo) {
+    } else if (!hasAnyYayoiBikou && i === 0 && slip.carNo) {
+      // 弥生備考が全行空の場合のみ、伝票の車番を最初の行に表示
       bikoParts += ' ' + slip.carNo;
     }
     // 商品コード+商品名を1セルに統合（ページまたぎで分断されない）
