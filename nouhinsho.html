@@ -198,6 +198,8 @@ async function loadSlips() {
         zei: p['消費税合計']?.number || 0,
         zeikomi: p['税込合計']?.number || 0,
         detailRelIds: (p['明細一覧']?.relation || []).map(x => x.id),
+        kenmei: p['件名']?.rich_text?.[0]?.plain_text || '',
+        bikou: p['備考']?.rich_text?.[0]?.plain_text || '',
       };
     });
     renderSlipList(allSlips);
@@ -384,12 +386,16 @@ table { width:100%; border-collapse:collapse; margin-bottom:10px; font-size:11px
 th { background:#003399; color:#fff; padding:5px 8px; font-weight:700; text-align:center; font-size:10px; letter-spacing:1px; border:1px solid #003399; }
 td { padding:3px 8px; border-bottom:0.5px solid #ddd; vertical-align:top; }
 .code-row td { font-size:9px; color:#666; padding-bottom:0; border-bottom:none; }
-.num { text-align:right; font-family:'DM Mono',monospace; font-weight:600; }
-.biko { font-size:10px; }
-.footer { display:flex; justify-content:flex-end; border-top:2px solid #003399; padding-top:6px; }
-.footer-item { padding:4px 16px; text-align:center; }
-.footer-label { font-size:10px; color:#003399; font-weight:700; letter-spacing:1px; }
-.footer-val { font-size:14px; font-weight:900; font-family:'DM Mono',monospace; }
+.num { text-align:right; font-family:'DM Mono',monospace; font-weight:600; font-size:12px; }
+.biko { font-size:10px; text-align:right; }
+.footer { display:flex; justify-content:flex-end; border-top:2px solid #003399; padding-top:8px; margin-bottom:10px; }
+.footer-item { padding:6px 18px; text-align:center; border-right:1px solid #ccc; }
+.footer-item:last-child { border-right:none; }
+.footer-label { font-size:10px; color:#003399; font-weight:700; letter-spacing:1px; margin-bottom:2px; }
+.footer-val { font-size:16px; font-weight:900; font-family:'DM Mono',monospace; }
+.footer-item:last-child .footer-val { color:#003399; }
+.tekiyou { border:1px solid #999; border-radius:2px; padding:8px 12px; min-height:40px; font-size:11px; line-height:1.6; color:#333; margin-bottom:10px; }
+.tekiyou-label { font-size:9px; color:#666; letter-spacing:1px; margin-bottom:3px; }
 </style></head><body>
 <div class="wrapper">
   <div class="title">納　品　書</div>
@@ -429,6 +435,11 @@ td { padding:3px 8px; border-bottom:0.5px solid #ddd; vertical-align:top; }
     <div class="footer-item"><div class="footer-label">消費税額</div><div class="footer-val">${yen(slip.zei)}</div></div>
     <div class="footer-item"><div class="footer-label">合計</div><div class="footer-val">${yen(slip.zeikomi)}</div></div>
   </div>
+  ${(slip.kenmei || slip.bikou) ? `
+  <div class="tekiyou-label">摘　要</div>
+  <div class="tekiyou">
+    ${slip.kenmei ? esc(slip.kenmei) : ''}${slip.kenmei && slip.bikou ? '<br>' : ''}${slip.bikou ? esc(slip.bikou) : ''}
+  </div>` : ''}
 </div>
 <script>window.onload = function() { setTimeout(function(){ window.print(); }, 400); };<\/script>
 </body></html>`;
