@@ -245,6 +245,11 @@ async function generateNouhinsho(slipId) {
   const slip = allSlips.find(s => s.id === slipId);
   if (!slip) return;
 
+  // クリック直後にウィンドウを開く（ポップアップブロック回避）
+  const w = window.open('', '_blank');
+  if (!w) { alert('ポップアップを許可してください'); return; }
+  w.document.write('<html><body style="font-family:sans-serif;text-align:center;padding:60px;color:#666;"><div>納品書を生成中...</div></body></html>');
+
   // ローディング表示
   document.getElementById('slip-list').innerHTML = '<div class="loading">納品書を生成中...</div>';
 
@@ -294,18 +299,16 @@ async function generateNouhinsho(slipId) {
     // 作成時刻で昇順ソート（弥生Excelの並び順を復元）
     details.sort((a, b) => (a.createdTime || '').localeCompare(b.createdTime || ''));
 
-    // 納品書HTMLを生成
+    // 納品書HTMLを生成して、既に開いたウィンドウに書き込む
     const html = buildNouhinshoHTML(slip, custName, custZip, custAddr, custCode, details);
-
-    // 印刷
-    const w = window.open('', '_blank');
-    if (!w) { alert('ポップアップがブロックされました。許可してください。'); renderSlipList(allSlips); return; }
+    w.document.open();
     w.document.write(html);
     w.document.close();
 
     // 元の一覧に戻す
     renderSlipList(allSlips);
   } catch(e) {
+    w.close();
     document.getElementById('slip-list').innerHTML = `<div class="error-box">生成に失敗: ${e.message}</div>`;
   }
 }
