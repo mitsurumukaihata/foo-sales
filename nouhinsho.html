@@ -327,21 +327,20 @@ function buildNouhinshoHTML(slip, custName, custZip, custAddr, custCode, details
     return name || d.title || '—';
   }
 
-  // 備考列: 税区分の略称 + 車番
-  function bikouDisplay(d, carNo) {
-    let parts = [];
-    if (d.taxKubun === '課税(10%)') parts.push('課');
-    else if (d.taxKubun === '軽減税率(8%)') parts.push('軽8%');
-    else if (d.taxKubun === '非課税') parts.push('非');
-    // 最初の明細にだけ車番を入れる（弥生の動作と同じ）
-    return parts.join(' ');
+  // 備考列: 税区分の略称 + 車番（弥生と同じ表示）
+  function bikouDisplay(d) {
+    // 税区分の略称
+    if (!d.taxKubun || d.taxKubun.includes('10')) return '課';
+    if (d.taxKubun.includes('8') || d.taxKubun.includes('軽減')) return '軽8%';
+    if (d.taxKubun.includes('非')) return '非';
+    return '課'; // デフォルト
   }
 
   // 明細行HTML（商品コードと商品名を弥生と同じ2段表示）
   let rowsHtml = '';
   details.forEach((d, i) => {
-    const biko = bikouDisplay(d, slip.carNo);
-    const bikoWithCar = i === 0 && slip.carNo ? biko + ' ' + slip.carNo : biko;
+    const taxLabel = bikouDisplay(d);
+    const bikoWithCar = i === 0 && slip.carNo ? taxLabel + ' ' + slip.carNo : taxLabel;
     // 上段: 商品コード（小さい文字）
     rowsHtml += `<tr class="code-row"><td colspan="6" style="font-size:9px;color:#666;padding:2px 8px 0;border-bottom:none;">${esc(d.code)}</td></tr>`;
     // 下段: 商品名 + 数量等
@@ -386,7 +385,7 @@ table { width:100%; border-collapse:collapse; margin-bottom:10px; font-size:11px
 th { background:#003399; color:#fff; padding:5px 8px; font-weight:700; text-align:center; font-size:10px; letter-spacing:1px; border:1px solid #003399; }
 td { padding:3px 8px; border-bottom:0.5px solid #ddd; vertical-align:top; }
 .code-row td { font-size:9px; color:#666; padding-bottom:0; border-bottom:none; }
-.num { text-align:right; font-family:'DM Mono',monospace; font-weight:600; font-size:12px; }
+.num { text-align:right; font-family:'DM Mono',monospace; font-weight:400; font-size:12px; }
 .biko { font-size:10px; text-align:right; }
 .footer { display:flex; justify-content:flex-end; border-top:2px solid #003399; padding-top:8px; margin-bottom:10px; }
 .footer-item { padding:6px 18px; text-align:center; border-right:1px solid #ccc; }
