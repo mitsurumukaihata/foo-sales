@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>納品書 | f.o.o 売上管理</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
+
+/* ── 画面用（検索・選択UI） ── */
+:root { --bg:#18181f; --s1:#101015; --s2:#1e1e26; --s3:#26262f; --border:#2c2c38; --text:#f0f0f2; --muted:#68687a; --accent:#1e3a5f; --gold:#c9a227; }
+@media (prefers-color-scheme:light) { :root { --bg:#f3f7f1; --s1:#fff; --s2:#eaf1e8; --s3:#dde8da; --border:#c8d8c2; --text:#0f1a17; --muted:#5e7260; --accent:#1e3a5f; --gold:#b8910d; } }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans JP',sans-serif; }
+
+.app-header { background:var(--s1); border-bottom:0.5px solid var(--border); padding:14px 20px 10px; position:sticky; top:0; z-index:100; }
+.app-header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:2px; }
+.app-header-brand { font-size:10px; color:var(--muted); letter-spacing:0.12em; }
+.app-header-back { font-size:11px; color:var(--muted); text-decoration:none; border:0.5px solid var(--border); border-radius:20px; padding:3px 10px; }
+.app-header-title { font-size:18px; font-weight:900; }
+.app-header-title span { color:var(--gold); }
+
+.search-area { padding:16px 20px; }
+.search-input { width:100%; background:var(--s2); border:1.5px solid var(--border); border-radius:10px; padding:12px 14px; font-size:14px; color:var(--text); font-family:inherit; outline:none; }
+.search-input:focus { border-color:var(--accent); }
+
+.slip-list { padding:0 20px 100px; }
+.slip-card { background:var(--s2); border:0.5px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:8px; cursor:pointer; transition:border-color 0.12s; }
+.slip-card:hover { border-color:var(--gold); }
+.slip-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; }
+.slip-title { font-size:14px; font-weight:700; }
+.slip-date { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; }
+.slip-meta { font-size:11px; color:var(--muted); }
+
+.loading { text-align:center; padding:40px; color:var(--muted); font-size:13px; }
+.error-box { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:12px; margin:12px 20px; font-size:12px; color:#ef4444; }
+
+/* ── 印刷専用レイアウト ── */
+@media print {
+  body { background:#fff !important; color:#000 !important; font-family:'Noto Sans JP','MS Gothic',sans-serif; }
+  .no-print { display:none !important; }
+  .print-page { display:block !important; }
+}
+
+.print-page { display:none; }
+
+/* 納品書レイアウト（A4） */
+@page { size:A4 portrait; margin:12mm 15mm; }
+.nouhinsho {
+  width:100%; max-width:180mm; margin:0 auto; padding:0;
+  font-family:'Noto Sans JP','MS Gothic',sans-serif; color:#000; background:#fff;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+.nh-header { display:flex; justify-content:space-between; margin-bottom:16px; }
+.nh-left { flex:1; }
+.nh-right { flex:1; text-align:right; }
+.nh-doc-title { font-size:24px; font-weight:900; color:#003399; letter-spacing:8px; text-align:center; margin-bottom:6px; }
+.nh-page-info { text-align:right; font-size:10px; color:#666; margin-bottom:4px; }
+.nh-date { font-size:13px; margin-bottom:14px; }
+.nh-company { font-size:16px; font-weight:900; margin-bottom:4px; }
+.nh-company-addr { font-size:11px; color:#333; line-height:1.6; }
+.nh-reg { font-size:11px; color:#333; margin-top:4px; }
+.nh-staff { font-size:12px; margin-top:4px; }
+.nh-stamp { width:50px; height:50px; border:1.5px solid #003399; float:right; margin-top:-50px; }
+
+.nh-customer { margin-bottom:14px; }
+.nh-cust-zip { font-size:11px; color:#333; }
+.nh-cust-addr { font-size:11px; color:#333; }
+.nh-cust-name { font-size:16px; font-weight:700; margin-top:2px; }
+.nh-cust-keisho { font-size:14px; margin-left:20px; }
+.nh-cust-code { font-size:11px; color:#666; margin-top:2px; }
+
+/* 明細テーブル */
+.nh-table { width:100%; border-collapse:collapse; margin-bottom:12px; font-size:11px; }
+.nh-table th { background:#003399; color:#fff; padding:5px 8px; font-weight:700; text-align:center; font-size:10px; letter-spacing:1px; border:1px solid #003399; }
+.nh-table td { padding:4px 8px; border-bottom:0.5px solid #ddd; vertical-align:top; }
+.nh-table .code-cell { font-size:9px; color:#666; padding-bottom:0; border-bottom:none; }
+.nh-table .name-cell { font-size:12px; font-weight:500; padding-top:1px; }
+.nh-table .num-cell { text-align:right; font-family:'DM Mono',monospace; font-weight:600; }
+.nh-table .biko-cell { font-size:10px; }
+
+/* フッター集計 */
+.nh-footer { display:flex; justify-content:flex-end; gap:0; border-top:2px solid #003399; padding-top:6px; font-size:12px; }
+.nh-footer-item { padding:4px 14px; text-align:center; }
+.nh-footer-label { font-size:10px; color:#003399; font-weight:700; letter-spacing:1px; }
+.nh-footer-val { font-size:14px; font-weight:900; font-family:'DM Mono',monospace; }
+</style>
+</head>
+<body>
+
+<!-- ── 検索・選択UI（画面表示、印刷時は非表示） ── -->
+<div class="no-print">
+  <div class="app-header">
+    <div class="app-header-top">
+      <div class="app-header-brand">F.O.O · 売上管理</div>
+      <a class="app-header-back" href="index.html">← 売上管理</a>
+    </div>
+    <div class="app-header-title">納品書<span>発行</span></div>
+  </div>
+  <div class="search-area">
+    <input class="search-input" id="search" type="text" placeholder="顧客名・車番・伝票番号で検索" oninput="filterSlips(this.value)">
+  </div>
+  <div class="slip-list" id="slip-list">
+    <div class="loading">売上伝票を読み込み中...</div>
+  </div>
+</div>
+
+<!-- ── 印刷用 納品書（画面では非表示、印刷時のみ表示） ── -->
+<div class="print-page" id="print-page"></div>
+
+<script>
+const WORKER = 'https://notion-proxy.33322666666mm.workers.dev';
+const SALES_DB = '58cc4a13df03435db14b3439ef1f0a6f';
+const DETAIL_DB = '07bd22655e5849fd854bef1f4c4b5688';
+const CUST_DB = '1ca8d122be214e3892879932147143c9';
+
+// 自社情報
+const COMPANY = {
+  name: '有限会社タイヤマネージャー　フー',
+  zip: '731-5141',
+  address: '広島県広島市佐伯区千同3丁目394-1',
+  tel: '090-7899-5191',
+  fax: '082-942-3731',
+  reg: 'T6240002029421',
+};
+
+let allSlips = [];
+
+async function notionAPI(method, path, body) {
+  const res = await fetch(WORKER + path, {
+    method, headers:{'Content-Type':'application/json'},
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return res.json();
+}
+
+// 伝票一覧を取得
+async function loadSlips() {
+  const list = document.getElementById('slip-list');
+  try {
+    let results = [], cursor = null;
+    do {
+      const body = {
+        sorts: [{ timestamp: 'created_time', direction: 'descending' }],
+        page_size: 100,
+      };
+      if (cursor) body.start_cursor = cursor;
+      const res = await notionAPI('POST', `/databases/${SALES_DB}/query`, body);
+      results.push(...(res.results || []));
+      cursor = res.has_more ? res.next_cursor : null;
+    } while (cursor);
+
+    allSlips = results.map(r => {
+      const p = r.properties;
+      return {
+        id: r.id,
+        title: p['伝票タイトル']?.title?.[0]?.plain_text || '',
+        date: p['売上日']?.date?.start || '',
+        slipNo: p['伝票番号']?.unique_id?.number || '',
+        slipType: p['伝票種類']?.select?.name || '納品書',
+        staff: p['担当者']?.select?.name || '',
+        carNo: p['車番']?.rich_text?.[0]?.plain_text || '',
+        keisho: p['宛先敬称']?.select?.name || '御中',
+        custRelId: p['顧客名']?.relation?.[0]?.id || '',
+        zeinuki: p['税抜合計']?.number || 0,
+        zei: p['消費税合計']?.number || 0,
+        zeikomi: p['税込合計']?.number || 0,
+        detailRelIds: (p['明細一覧']?.relation || []).map(x => x.id),
+      };
+    });
+    renderSlipList(allSlips);
+  } catch(e) {
+    list.innerHTML = `<div class="error-box">読み込みに失敗しました: ${e.message}</div>`;
+  }
+}
+
+function renderSlipList(slips) {
+  const list = document.getElementById('slip-list');
+  if (!slips.length) { list.innerHTML = '<div class="loading">伝票がありません</div>'; return; }
+  list.innerHTML = slips.slice(0, 100).map(s => {
+    const yen = n => n ? '¥' + n.toLocaleString() : '';
+    return `<div class="slip-card" onclick="generateNouhinsho('${s.id}')">
+      <div class="slip-top">
+        <div class="slip-title">${esc(s.title)}</div>
+        <div class="slip-date">${s.date}</div>
+      </div>
+      <div class="slip-meta">${s.slipType} · No.${s.slipNo || '—'} · ${s.staff || '担当者未設定'} · ${yen(s.zeikomi)}</div>
+    </div>`;
+  }).join('');
+}
+
+function filterSlips(q) {
+  const query = q.toLowerCase().trim();
+  if (!query) { renderSlipList(allSlips); return; }
+  const filtered = allSlips.filter(s =>
+    s.title.toLowerCase().includes(query) ||
+    String(s.slipNo).includes(query) ||
+    s.carNo.toLowerCase().includes(query)
+  );
+  renderSlipList(filtered);
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function yen(n) { return n ? n.toLocaleString() : ''; }
+function fmtDate(d) {
+  if (!d) return '';
+  const [y, m, dd] = d.split('-');
+  return `${y}年${m}月${dd}日`;
+}
+
+// 納品書を生成
+async function generateNouhinsho(slipId) {
+  const slip = allSlips.find(s => s.id === slipId);
+  if (!slip) return;
+
+  // ローディング表示
+  document.getElementById('slip-list').innerHTML = '<div class="loading">納品書を生成中...</div>';
+
+  try {
+    // 顧客情報を取得
+    let custName = '', custZip = '', custAddr = '', custCode = '';
+    if (slip.custRelId) {
+      const custRes = await notionAPI('GET', `/pages/${slip.custRelId}`);
+      const cp = custRes.properties || {};
+      custName = cp['会社名']?.title?.[0]?.plain_text || '';
+      custCode = cp['弥生得意先コード']?.rich_text?.[0]?.plain_text || '';
+      // 住所は将来追加（現在は空）
+      custZip = cp['郵便番号']?.rich_text?.[0]?.plain_text || '';
+      custAddr = cp['住所']?.rich_text?.[0]?.plain_text || '';
+    }
+
+    // 明細を取得
+    const details = [];
+    for (const detailId of slip.detailRelIds) {
+      const dr = await notionAPI('GET', `/pages/${detailId}`);
+      const dp = dr.properties || {};
+      details.push({
+        code: dp['商品コード']?.rich_text?.[0]?.plain_text || '',
+        title: dp['明細タイトル']?.title?.[0]?.plain_text || '',
+        bikou: dp['備考']?.rich_text?.[0]?.plain_text || '',
+        qty: dp['数量']?.number || 0,
+        unit: dp['単位']?.select?.name || '本',
+        price: dp['単価']?.number || 0,
+        amount: dp['数量']?.number && dp['単価']?.number ? dp['数量'].number * dp['単価'].number : 0,
+        taxKubun: dp['税区分']?.select?.name || '',
+        size: dp['タイヤサイズ']?.rich_text?.[0]?.plain_text || '',
+        brand: dp['タイヤ銘柄']?.rich_text?.[0]?.plain_text || '',
+        hinmoku: dp['品目']?.select?.name || '',
+      });
+    }
+
+    // 納品書HTMLを生成
+    const html = buildNouhinshoHTML(slip, custName, custZip, custAddr, custCode, details);
+
+    // 印刷
+    const w = window.open('', '_blank');
+    if (!w) { alert('ポップアップがブロックされました。許可してください。'); renderSlipList(allSlips); return; }
+    w.document.write(html);
+    w.document.close();
+
+    // 元の一覧に戻す
+    renderSlipList(allSlips);
+  } catch(e) {
+    document.getElementById('slip-list').innerHTML = `<div class="error-box">生成に失敗: ${e.message}</div>`;
+  }
+}
+
+function buildNouhinshoHTML(slip, custName, custZip, custAddr, custCode, details) {
+  // 商品名の表示: 弥生風に「カテゴリ 商品名」の形式
+  function productDisplay(d) {
+    // 備考にある弥生の商品名/摘要を優先
+    if (d.bikou) return d.bikou;
+    // なければ品目 + サイズ + 銘柄から組み立て
+    let name = d.hinmoku || '';
+    if (d.brand) name += (name ? ' ' : '') + d.brand;
+    if (d.size) name += (name ? ' ' : '') + d.size;
+    return name || d.title || '—';
+  }
+
+  // 備考列: 税区分の略称 + 車番
+  function bikouDisplay(d, carNo) {
+    let parts = [];
+    if (d.taxKubun === '課税(10%)') parts.push('課');
+    else if (d.taxKubun === '軽減税率(8%)') parts.push('軽8%');
+    else if (d.taxKubun === '非課税') parts.push('非');
+    // 最初の明細にだけ車番を入れる（弥生の動作と同じ）
+    return parts.join(' ');
+  }
+
+  // 明細行HTML
+  let rowsHtml = '';
+  details.forEach((d, i) => {
+    const biko = bikouDisplay(d, slip.carNo);
+    const bikoWithCar = i === 0 && slip.carNo ? biko + ' ' + slip.carNo : biko;
+    // コード行（小さい文字）
+    rowsHtml += `<tr><td class="code-cell" colspan="6"><span style="font-size:9px;color:#666;">${esc(d.code)}</span></td></tr>`;
+    // 商品名行
+    rowsHtml += `<tr>
+      <td class="name-cell">${esc(productDisplay(d))}</td>
+      <td class="num-cell">${d.qty || ''}</td>
+      <td style="text-align:center;">${d.unit || ''}</td>
+      <td class="num-cell">${d.price ? yen(d.price) : ''}</td>
+      <td class="num-cell">${d.amount ? yen(d.amount) : ''}</td>
+      <td class="biko-cell">${esc(bikoWithCar)}</td>
+    </tr>`;
+  });
+  // 空行を埋めて用紙を使い切る（最低20行）
+  const emptyRows = Math.max(0, 20 - details.length * 2);
+  for (let i = 0; i < emptyRows; i++) {
+    rowsHtml += '<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>';
+  }
+
+  const slipNoStr = slip.slipNo ? String(slip.slipNo).padStart(8, '0') : '';
+
+  return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<title>納品書 ${slip.title}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
+@page { size:A4 portrait; margin:12mm 15mm; }
+body { font-family:'Noto Sans JP','MS Gothic',sans-serif; color:#000; background:#fff; margin:0; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.wrapper { max-width:180mm; margin:0 auto; padding:10mm 0; }
+.title { font-size:24px; font-weight:900; color:#003399; letter-spacing:8px; text-align:center; margin-bottom:6px; }
+.page-info { text-align:right; font-size:10px; color:#666; }
+.header { display:flex; justify-content:space-between; margin-top:10px; margin-bottom:14px; }
+.header-left { flex:1; }
+.header-right { flex:1; }
+.date-line { font-size:13px; margin-bottom:12px; }
+.company-name { font-size:15px; font-weight:900; margin-bottom:3px; }
+.company-info { font-size:11px; color:#333; line-height:1.7; }
+.stamp-box { width:50px; height:50px; border:1.5px solid #003399; float:right; margin-left:10px; }
+.cust-zip { font-size:11px; color:#333; }
+.cust-addr { font-size:11px; color:#333; }
+.cust-name { font-size:16px; font-weight:700; margin-top:4px; }
+.cust-code { font-size:11px; color:#666; margin-top:2px; }
+table { width:100%; border-collapse:collapse; margin-bottom:10px; font-size:11px; }
+th { background:#003399; color:#fff; padding:5px 8px; font-weight:700; text-align:center; font-size:10px; letter-spacing:1px; border:1px solid #003399; }
+td { padding:3px 8px; border-bottom:0.5px solid #ddd; vertical-align:top; }
+.code-row td { font-size:9px; color:#666; padding-bottom:0; border-bottom:none; }
+.num { text-align:right; font-family:'DM Mono',monospace; font-weight:600; }
+.biko { font-size:10px; }
+.footer { display:flex; justify-content:flex-end; border-top:2px solid #003399; padding-top:6px; }
+.footer-item { padding:4px 16px; text-align:center; }
+.footer-label { font-size:10px; color:#003399; font-weight:700; letter-spacing:1px; }
+.footer-val { font-size:14px; font-weight:900; font-family:'DM Mono',monospace; }
+</style></head><body>
+<div class="wrapper">
+  <div class="title">納　品　書</div>
+  <div class="page-info">PAGE 1 &nbsp; No. ${slipNoStr}</div>
+  <div class="header">
+    <div class="header-left">
+      <div class="date-line">売上日　${fmtDate(slip.date)}</div>
+      <div class="cust-zip">${custZip}</div>
+      <div class="cust-addr">${esc(custAddr)}</div>
+      <div class="cust-name">${esc(custName)}<span style="margin-left:20px;font-size:14px;font-weight:400;">${slip.keisho}</span></div>
+      <div class="cust-code">${custCode ? '(' + custCode + ')' : ''}</div>
+    </div>
+    <div class="header-right">
+      <div class="stamp-box"></div>
+      <div class="company-name">${COMPANY.name}</div>
+      <div class="company-info">
+        ${COMPANY.zip}　${COMPANY.address}<br>
+        TEL ${COMPANY.tel}　FAX ${COMPANY.fax}<br>
+        登録番号　${COMPANY.reg}
+      </div>
+      <div style="font-size:12px;margin-top:6px;">担当者：${esc(slip.staff || '—')}</div>
+    </div>
+  </div>
+  <table>
+    <thead><tr>
+      <th style="width:40%;">商品コード／商品名</th>
+      <th style="width:8%;">数量</th>
+      <th style="width:8%;">単位</th>
+      <th style="width:14%;">単　価</th>
+      <th style="width:14%;">金　額</th>
+      <th style="width:16%;">備　考</th>
+    </tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  <div class="footer">
+    <div class="footer-item"><div class="footer-label">税抜額</div><div class="footer-val">${yen(slip.zeinuki)}</div></div>
+    <div class="footer-item"><div class="footer-label">消費税額</div><div class="footer-val">${yen(slip.zei)}</div></div>
+    <div class="footer-item"><div class="footer-label">合計</div><div class="footer-val">${yen(slip.zeikomi)}</div></div>
+  </div>
+</div>
+<script>window.onload = function() { setTimeout(function(){ window.print(); }, 400); };<\/script>
+</body></html>`;
+}
+
+// 初期化
+loadSlips();
+</script>
+</body>
+</html>
