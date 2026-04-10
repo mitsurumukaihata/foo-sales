@@ -277,13 +277,15 @@ async function generateNouhinsho(slipId) {
       }
     }
 
-    // 明細を取得（created_time順=弥生の並び順）
-    const details = [];
-    for (const detailId of slip.detailRelIds) {
-      const dr = await notionAPI('GET', `/pages/${detailId}`);
+    // 明細を売上明細DBから直接クエリ（created_time昇順=弥生の並び順）
+    const detailRes = await notionAPI('POST', `/databases/${DETAIL_DB}/query`, {
+      filter: { property: '売上伝票', relation: { contains: slipId } },
+      sorts: [{ timestamp: 'created_time', direction: 'ascending' }],
+      page_size: 100,
+    });
+    const details = (detailRes.results || []).map(dr => {
       const dp = dr.properties || {};
-      details.push({
-        createdTime: dr.created_time || '',
+      return {
         code: dp['商品コード']?.rich_text?.[0]?.plain_text || '',
         title: dp['明細タイトル']?.title?.[0]?.plain_text || '',
         bikou: dp['備考']?.rich_text?.[0]?.plain_text || '',
@@ -296,11 +298,8 @@ async function generateNouhinsho(slipId) {
         brand: dp['タイヤ銘柄']?.rich_text?.[0]?.plain_text || '',
         hinmoku: dp['品目']?.select?.name || '',
         yayoiBikou: dp['弥生備考']?.rich_text?.[0]?.plain_text || '',
-      });
-    }
-
-    // 作成時刻で昇順ソート（弥生Excelの並び順を復元）
-    details.sort((a, b) => (a.createdTime || '').localeCompare(b.createdTime || ''));
+      };
+    });
 
     // 納品書HTMLを生成して、既に開いたウィンドウに書き込む
     const html = buildNouhinshoHTML(slip, custName, custZip, custAddr, custCode, details);
