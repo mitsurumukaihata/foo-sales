@@ -341,18 +341,15 @@ function buildNouhinshoHTML(slip, custName, custZip, custAddr, custCode, details
   let rowsHtml = '';
   details.forEach((d, i) => {
     const taxLabel = bikouDisplay(d);
-    // 備考: 税区分 + 弥生備考（エンドユーザー名・車番・管理番号等）
     let bikoParts = taxLabel;
     if (d.yayoiBikou) {
       bikoParts += ' ' + d.yayoiBikou;
     } else if (i === 0 && slip.carNo) {
       bikoParts += ' ' + slip.carNo;
     }
-    // 上段: 商品コード（小さい文字）
-    rowsHtml += `<tr class="code-row"><td colspan="6" style="font-size:9px;color:#666;padding:2px 8px 0;border-bottom:none;">${esc(d.code)}</td></tr>`;
-    // 下段: 商品名 + 数量等
-    rowsHtml += `<tr>
-      <td style="font-size:12px;padding:0 8px 3px;">${esc(productDisplay(d))}</td>
+    // 商品コード+商品名を1セルに統合（ページまたぎで分断されない）
+    rowsHtml += `<tr style="break-inside:avoid;">
+      <td style="padding:3px 8px;"><div style="font-size:9px;color:#666;line-height:1.2;">${esc(d.code)}</div><div style="font-size:12px;line-height:1.3;">${esc(productDisplay(d))}</div></td>
       <td class="num">${d.qty || ''}</td>
       <td style="text-align:center;">${d.unit || ''}</td>
       <td class="num">${d.price ? yen(d.price) : ''}</td>
@@ -389,9 +386,10 @@ body { font-family:'Noto Sans JP','MS Gothic',sans-serif; color:#000; background
 .cust-name { font-size:16px; font-weight:700; margin-top:4px; }
 .cust-code { font-size:11px; color:#666; margin-top:2px; }
 table { width:100%; border-collapse:collapse; margin-bottom:10px; font-size:11px; }
+thead { display:table-header-group; } /* 各ページでヘッダー繰り返し */
 th { background:#003399; color:#fff; padding:5px 8px; font-weight:700; text-align:center; font-size:10px; letter-spacing:1px; border:1px solid #003399; }
 td { padding:3px 8px; border-bottom:0.5px solid #ddd; vertical-align:top; }
-.code-row td { font-size:9px; color:#666; padding-bottom:0; border-bottom:none; }
+tr { break-inside:avoid; } /* 行の途中でページ分割しない */
 .num { text-align:right; font-family:'DM Mono',monospace; font-weight:400; font-size:12px; }
 .biko { font-size:10px; text-align:right; }
 .footer { display:flex; justify-content:flex-end; border-top:2px solid #003399; padding-top:8px; margin-bottom:10px; }
