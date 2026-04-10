@@ -270,12 +270,13 @@ async function generateNouhinsho(slipId) {
       }
     }
 
-    // 明細を取得
+    // 明細を取得（created_time順=弥生の並び順）
     const details = [];
     for (const detailId of slip.detailRelIds) {
       const dr = await notionAPI('GET', `/pages/${detailId}`);
       const dp = dr.properties || {};
       details.push({
+        createdTime: dr.created_time || '',
         code: dp['商品コード']?.rich_text?.[0]?.plain_text || '',
         title: dp['明細タイトル']?.title?.[0]?.plain_text || '',
         bikou: dp['備考']?.rich_text?.[0]?.plain_text || '',
@@ -289,6 +290,9 @@ async function generateNouhinsho(slipId) {
         hinmoku: dp['品目']?.select?.name || '',
       });
     }
+
+    // 作成時刻で昇順ソート（弥生Excelの並び順を復元）
+    details.sort((a, b) => (a.createdTime || '').localeCompare(b.createdTime || ''));
 
     // 納品書HTMLを生成
     const html = buildNouhinshoHTML(slip, custName, custZip, custAddr, custCode, details);
@@ -328,27 +332,27 @@ function buildNouhinshoHTML(slip, custName, custZip, custAddr, custCode, details
     return parts.join(' ');
   }
 
-  // 明細行HTML
+  // 明細行HTML（商品コードと商品名を弥生と同じ2段表示）
   let rowsHtml = '';
   details.forEach((d, i) => {
     const biko = bikouDisplay(d, slip.carNo);
     const bikoWithCar = i === 0 && slip.carNo ? biko + ' ' + slip.carNo : biko;
-    // コード行（小さい文字）
-    rowsHtml += `<tr><td class="code-cell" colspan="6"><span style="font-size:9px;color:#666;">${esc(d.code)}</span></td></tr>`;
-    // 商品名行
+    // 上段: 商品コード（小さい文字）
+    rowsHtml += `<tr class="code-row"><td colspan="6" style="font-size:9px;color:#666;padding:2px 8px 0;border-bottom:none;">${esc(d.code)}</td></tr>`;
+    // 下段: 商品名 + 数量等
     rowsHtml += `<tr>
-      <td class="name-cell">${esc(productDisplay(d))}</td>
-      <td class="num-cell">${d.qty || ''}</td>
+      <td style="font-size:12px;padding:0 8px 3px;">${esc(productDisplay(d))}</td>
+      <td class="num">${d.qty || ''}</td>
       <td style="text-align:center;">${d.unit || ''}</td>
-      <td class="num-cell">${d.price ? yen(d.price) : ''}</td>
-      <td class="num-cell">${d.amount ? yen(d.amount) : ''}</td>
-      <td class="biko-cell">${esc(bikoWithCar)}</td>
+      <td class="num">${d.price ? yen(d.price) : ''}</td>
+      <td class="num">${d.amount ? yen(d.amount) : ''}</td>
+      <td class="biko">${esc(bikoWithCar)}</td>
     </tr>`;
   });
-  // 空行を埋めて用紙を使い切る（最低20行）
-  const emptyRows = Math.max(0, 20 - details.length * 2);
+  // 空行を埋める（最低15行）
+  const emptyRows = Math.max(0, 15 - details.length);
   for (let i = 0; i < emptyRows; i++) {
-    rowsHtml += '<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>';
+    rowsHtml += '<tr><td style="height:18px;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>';
   }
 
   const slipNoStr = slip.slipNo ? String(slip.slipNo).padStart(8, '0') : '';
@@ -357,9 +361,9 @@ function buildNouhinshoHTML(slip, custName, custZip, custAddr, custCode, details
 <title>納品書 ${slip.title}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
-@page { size:A4 portrait; margin:12mm 15mm; }
+@page { size:A4 portrait; margin:8mm 10mm; }
 body { font-family:'Noto Sans JP','MS Gothic',sans-serif; color:#000; background:#fff; margin:0; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-.wrapper { max-width:180mm; margin:0 auto; padding:10mm 0; }
+.wrapper { max-width:190mm; margin:0 auto; padding:6mm 0; }
 .title { font-size:24px; font-weight:900; color:#003399; letter-spacing:8px; text-align:center; margin-bottom:6px; }
 .page-info { text-align:right; font-size:10px; color:#666; }
 .header { display:flex; justify-content:space-between; margin-top:10px; margin-bottom:14px; }
@@ -408,12 +412,12 @@ td { padding:3px 8px; border-bottom:0.5px solid #ddd; vertical-align:top; }
   </div>
   <table>
     <thead><tr>
-      <th style="width:40%;">商品コード／商品名</th>
-      <th style="width:8%;">数量</th>
-      <th style="width:8%;">単位</th>
-      <th style="width:14%;">単　価</th>
+      <th style="width:34%;">商品コード／商品名</th>
+      <th style="width:7%;">数量</th>
+      <th style="width:6%;">単位</th>
+      <th style="width:13%;">単　価</th>
       <th style="width:14%;">金　額</th>
-      <th style="width:16%;">備　考</th>
+      <th style="width:26%;">備　考</th>
     </tr></thead>
     <tbody>${rowsHtml}</tbody>
   </table>
